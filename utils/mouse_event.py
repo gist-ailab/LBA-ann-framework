@@ -2,6 +2,7 @@ from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtCore import *
 
+
 class BboxDrawer(QWidget):
 	def __init__(self):
 		super().__init__()
@@ -51,6 +52,7 @@ class BboxDrawer(QWidget):
 		self.update()
 		self.image_ann = []
 		
+  
 	def on_clicked_1(self):
 		self.path = self.current_im
 		self.image = QPixmap(self.path).scaled(QSize(800, 500), aspectMode=Qt.KeepAspectRatio)

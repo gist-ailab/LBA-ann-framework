@@ -1,12 +1,8 @@
-import sys
 import os
-
-from PySide6.QtWidgets import  QWidget, QPushButton, QHBoxLayout, QVBoxLayout
 
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtCore import *
-
 
 from .mouse_event import BboxDrawer
 
@@ -103,7 +99,6 @@ class Ui_Dialog(BboxDrawer):
         self.setLayout(self.main_layout)
         self.retranslateUi()
         self.show()
-        print("1")
         
     
     def open_dialog_box(self):
