@@ -40,8 +40,6 @@ class Ui_Dialog(BboxDrawer):
     def initUI(self, ui_w=1200, ui_h=800):
         self.setMinimumSize(ui_w, ui_h)
         # self.setWindowTitle('Box Layout')
-        # self.setGeometry(1000, 600, 300, 200)
-        
         #########################################
         #########################################
         
@@ -51,7 +49,6 @@ class Ui_Dialog(BboxDrawer):
         self.image = QPixmap()
         self.viewer.setPixmap(self.image)
         self.viewer.setAlignment(Qt.AlignCenter)
-        
         image_viewer.addWidget(self.viewer)
         
         
