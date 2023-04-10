@@ -1,16 +1,16 @@
 import sys
 import os
 
-from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import  QWidget, QPushButton, QHBoxLayout, QVBoxLayout
 
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtCore import *
 
-# from .ann_drawer import BboxDrawer
 
-class Ui_Dialog(QWidget):
+from .mouse_event import BboxDrawer
+
+class Ui_Dialog(BboxDrawer):
 
     def __init__(self):
         super().__init__()
@@ -18,14 +18,28 @@ class Ui_Dialog(QWidget):
         self.path=[]
         self.current_im=[]
         
-        # self.pix = QPixmap(600,600)
-        # self.pix.fill(Qt.white)
+        self.ann_dict = {}
+        self.image_ann = [] # {'iscrowd': 0, 'image_id': 724, 'bbox': [120.07, 71.83, 134.49, 153.08], 'category_id': 13, 'id': 268988}, {}, {}, ...
         
         self.begin, self.destination = QPoint(), QPoint()
-        
         self.initUI()
+    
+    
+    def record_bbox_ann(self):
+        print(self.begin.toTuple(), self.destination.toTuple())
+        x1, y1 = self.begin.toTuple()
+        x2, y2 = self.destination.toTuple()
         
+        temp = {'iscrowd': 0,'image_id' :0,
+                'bbox':[min(x1, x2), min(y1, y2), abs(x2-x1), abs(y2-y1)], 'category_id': 0, 'id': 0}
         
+        self.image_ann.append(temp)
+        print(self.image_ann)
+        
+    def save_bbox_ann(self):
+        
+        self.image_ann
+    
 
     def initUI(self, ui_w=1200, ui_h=800):
         self.setMinimumSize(ui_w, ui_h)
@@ -36,7 +50,7 @@ class Ui_Dialog(QWidget):
         #########################################
         
         image_viewer = QVBoxLayout()
-        self.viewer= QtWidgets.QLabel()
+        self.viewer= QLabel()
 
         self.image = QPixmap()
         self.viewer.setPixmap(self.image)
@@ -89,41 +103,8 @@ class Ui_Dialog(QWidget):
         self.setLayout(self.main_layout)
         self.retranslateUi()
         self.show()
-        # QtCore.QMetaObject.connectSlotsByName()
-    
-    
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.drawPixmap(QPoint(), self.image)
+        print("1")
         
-        if not self.begin.isNull() and not self.destination.isNull():
-            rect = QRect(self.begin, self.destination)
-            painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
-            painter.drawRect(rect.normalized())
-    
-    def mousePressEvent(self, event):
-        if event.buttons() & Qt.LeftButton:
-            self.begin = event.pos()
-            self.destination = self.begin
-            self.update()
-            
-    def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.LeftButton:		
-
-            self.destination = event.pos()
-            self.update()
-
-    def mouseReleaseEvent(self, event):
-        if event.button() & Qt.LeftButton:
-            rect = QRect(self.begin, self.destination)
-            # print(self.begin.toTuple(), self.destination.toTuple())
-            painter = QPainter(self.image)
-            painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
-            painter.drawRect(rect.normalized())
-
-            self.begin, self.destination = QPoint(), QPoint()
-            self.update()
-   
     
     def open_dialog_box(self):
         self.filename=QFileDialog.getExistingDirectory()
@@ -135,28 +116,10 @@ class Ui_Dialog(QWidget):
         
         
     def retranslateUi(self):
- 
         self.loadButton.clicked.connect(self.open_dialog_box)
         self.nextButton.clicked.connect(self.next_im)
         self.prevButton.clicked.connect(self.previous_im)
-    
-    
-    def on_clicked(self, index):
-        self.path = self.fileModel.fileInfo(index).absoluteFilePath()
-        self.image = QtGui.QPixmap(self.path).scaled(QSize(800, 500), aspectMode=Qt.KeepAspectRatio)
-        # self.viewer.setPixmap(self.image)
-        # self.viewer.setAlignment(Qt.AlignCenter)
-        self.current_im=self.path
-        self.update()
-     
         
-    def on_clicked_1(self):
-        self.path = self.current_im
-        self.image = QtGui.QPixmap(self.path).scaled(QSize(800, 500), aspectMode=Qt.KeepAspectRatio)
-        # self.viewer.setPixmap(self.image)
-        # self.viewer.setAlignment(Qt.AlignCenter)
-        self.update()
-
         
     def next_im(self):
         directory=self.filename
@@ -179,6 +142,7 @@ class Ui_Dialog(QWidget):
 
             self.current_im=list_1[k]
             self.on_clicked_1()
+            self.image_ann = []
             
             
     def previous_im(self):
@@ -196,7 +160,5 @@ class Ui_Dialog(QWidget):
             n=list_1.index(self.current_im)
 
             self.current_im=list_1[n-1]
-            self.image = QtGui.QPixmap(self.path).scaled(QSize(640, 360), aspectMode=Qt.KeepAspectRatio)
-            # self.viewer.setPixmap(self.image)
-            # self.viewer.setAlignment(Qt.AlignCenter)
-    
+            self.on_clicked_1()
+            self.image_ann = []
