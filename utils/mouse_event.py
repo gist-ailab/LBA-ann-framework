@@ -19,7 +19,6 @@ class BboxDrawer(QWidget):
 	def paintEvent(self, event):
 		
 		painter = QPainter(self)
-  
 		painter.drawPixmap(QPoint(self.xh, self.yh), self.image)
 		
 		if not self.begin.isNull() and not self.destination.isNull():
@@ -29,13 +28,11 @@ class BboxDrawer(QWidget):
 			brush = QBrush(Qt.BDiagPattern)
 			painter.setBrush(brush)
 			painter.drawRect(rect.normalized())
-	
-		# 	self.viewer.setPixmap(self.image)
-	
-		# print(self.viewer.x(), self.viewer.y())
-		# print(self.viewer.width(), self.viewer.height())
-		# print(self.xh, self.yh)
-  
+
+			painter.end()
+			del painter
+
+
 	def mousePressEvent(self, event):
 		if event.buttons() & Qt.LeftButton:
 			self.begin = event.pos()
@@ -51,22 +48,31 @@ class BboxDrawer(QWidget):
 
 	def mouseReleaseEvent(self, event):
 		if event.button() & Qt.LeftButton:
-			painter = QPainter(self.image)
-			
-			print(self.begin - QPoint(self.xh, self.yh), self.destination - QPoint(self.xh, self.yh))
-			rect = QRect(self.begin - QPoint(self.xh, self.yh), 
-                		self.destination - QPoint(self.xh, self.yh))
-			
-			painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
-			painter.drawRect(rect.normalized())
-   
+			self.paint_bbox(self.begin, self.destination)
 			# self.viewer.setPixmap(self.image)
    
 			self.record_bbox_ann() # record ann bbox information
-
+			self.add_obj()
 			self.begin, self.destination = QPoint(), QPoint()
 			self.update()
 
+
+	def paint_bbox(self, begin, destination):
+		painter = QPainter()
+		painter.begin(self.image)
+		print(begin - QPoint(self.xh, self.yh), destination - QPoint(self.xh, self.yh))
+  
+		rect = QRect(begin - QPoint(self.xh, self.yh), 
+					 destination - QPoint(self.xh, self.yh))
+		
+		painter.setPen(QPen((QColor(255, 0, 0)), 2, Qt.SolidLine))
+		painter.drawRect(rect.normalized())
+  
+		painter.device()
+		painter.end()
+		del painter
+ 
+ 
 
 	def on_clicked(self, index):
 		self.path = self.fileModel.fileInfo(index).absoluteFilePath()
@@ -78,10 +84,12 @@ class BboxDrawer(QWidget):
 		# self.viewer.setPixmap(self.image)
 		self.current_im=self.path
 		self.update()
-		self.image_ann = []
-		
+		self.ann_init()
+		# self.scroll(self.path)
   
+		
 	def on_clicked_1(self):
+
 		self.path = self.current_im
 		self.image = QPixmap(self.path).scaled(QSize(self.imsp_w + 20, self.imsp_h - 20), aspectMode=Qt.KeepAspectRatio)
 
@@ -90,6 +98,13 @@ class BboxDrawer(QWidget):
   
   		# self.viewer.setPixmap(self.image)
 		self.update()
-		self.image_ann = []
+		self.ann_init()
+		print(self.fileModel.index())
+		# self.scroll(self.path)
+  
+	# def scroll(self, name):
+	# 	item = self.file_list.findItems(name, Qt.MatchRegExp)[0]
+	# 	item.setSelected(True)
+	# 	self.file_list.scrollToItem(item, QAbstractItemView.PositionAtTop)
 
 
