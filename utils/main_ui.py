@@ -18,11 +18,20 @@ class Ui_Dialog(BboxDrawer):
         self.image_ann = [] # {'iscrowd': 0, 'image_id': 724, 'bbox': [120.07, 71.83, 134.49, 153.08], 'category_id': 13, 'id': 268988}, {}, {}, ...
         
         self.begin, self.destination = QPoint(), QPoint()
+        self.xh, self.yh = 0, 0
+        
         self.initUI()
+        self.imsp_w, self.imsp_h = self.width()*(2/3), self.height()
+        
+        
+        img_w, img_h = self.image.width(), self.image.height()
+        self.xh, self.yh = abs(self.imsp_w - img_w)//2 , abs(self.imsp_h - img_h)//2
+        
+        
     
     
     def record_bbox_ann(self):
-        print(self.begin.toTuple(), self.destination.toTuple())
+        # print(self.begin.toTuple(), self.destination.toTuple())
         x1, y1 = self.begin.toTuple()
         x2, y2 = self.destination.toTuple()
         
@@ -30,7 +39,7 @@ class Ui_Dialog(BboxDrawer):
                 'bbox':[min(x1, x2), min(y1, y2), abs(x2-x1), abs(y2-y1)], 'category_id': 0, 'id': 0}
         
         self.image_ann.append(temp)
-        print(self.image_ann)
+        # print(self.image_ann)
         
     def save_bbox_ann(self):
         
@@ -43,13 +52,23 @@ class Ui_Dialog(BboxDrawer):
         #########################################
         #########################################
         
-        image_viewer = QVBoxLayout()
-        self.viewer= QLabel()
+        self.image_viewer = QVBoxLayout()
+        self.viewer= QLabel(self)
+        
 
-        self.image = QPixmap()
-        self.viewer.setPixmap(self.image)
-        self.viewer.setAlignment(Qt.AlignCenter)
-        image_viewer.addWidget(self.viewer)
+        self.image = QPixmap(820,780)
+        self.image.fill(Qt.gray)
+        
+        # self.viewer.setPixmap(self.image)
+        
+        
+        # image_x, image_y = 20, 20
+        # image_w, image_h = 800, 500
+        # self.viewer.setGeometry(image_x, image_y, image_w, image_h)
+        # self.viewer.setAlignment(Qt.AlignCenter)
+        
+        
+        # self.image_viewer.addWidget(self.viewer)
         
         
         #########################################
@@ -90,7 +109,7 @@ class Ui_Dialog(BboxDrawer):
         #########################################
         
         self.main_layout = QHBoxLayout()
-        self.main_layout.addLayout(image_viewer, 70)
+        self.main_layout.addLayout(self.image_viewer, 70)
         self.main_layout.addLayout(ann_tool, 30)
         
         self.setLayout(self.main_layout)
