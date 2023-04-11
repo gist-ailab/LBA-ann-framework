@@ -82,6 +82,9 @@ class BboxDrawer(QWidget):
  
 
 	def on_clicked(self, index):
+     
+		self.ann_init()
+  
 		self.path = self.fileModel.fileInfo(index).absoluteFilePath()
 		self.image = QPixmap(self.path).scaled(QSize(self.imsp_w + 20, self.imsp_h - 20), aspectMode=Qt.KeepAspectRatio)
   
@@ -91,12 +94,14 @@ class BboxDrawer(QWidget):
 		# self.viewer.setPixmap(self.image)
 		self.current_im=self.path
 		self.update()
-		self.ann_init()
+		
 		# self.scroll(self.path)
   
 		
 	def on_clicked_1(self):
-
+     
+		self.ann_init()
+  
 		self.path = self.current_im
 		self.image = QPixmap(self.path).scaled(QSize(self.imsp_w + 20, self.imsp_h - 20), aspectMode=Qt.KeepAspectRatio)
 
@@ -105,7 +110,7 @@ class BboxDrawer(QWidget):
   
   		# self.viewer.setPixmap(self.image)
 		self.update()
-		self.ann_init()
+		
 		# print(self.fileModel.index())
 		# self.scroll(self.path)
   
