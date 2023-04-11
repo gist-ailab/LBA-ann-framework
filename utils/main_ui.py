@@ -42,7 +42,7 @@ class Ui_Dialog(BboxDrawer):
         self.obj_idx += 1
         # self.image_ann[self.obj_idx]
         
-        self.obj_list.insertItem(self.obj_idx, "object" + str(self.obj_idx))
+        self.obj_list.insertItem(self.obj_idx, "object_class_" + str(self.obj_idx))
         
     
     def save_obj(self):
@@ -60,13 +60,18 @@ class Ui_Dialog(BboxDrawer):
         copy_image_ann = self.image_ann.copy()
         del copy_image_ann[idx]
         
-        self.image = QPixmap(self.path).scaled(QSize(self.imsp_w + 20, self.imsp_h - 20), aspectMode=Qt.KeepAspectRatio)
+        self.image = QPixmap(self.path).scaled(QSize(self.imsp_w + 20, self.imsp_h - 20), 
+                                               aspectMode=Qt.KeepAspectRatio)
         
         for ann in copy_image_ann:
             x, y, w, h= ann['bbox']
             begin = QPoint(x,y)
             destination = QPoint(x+w, y+h)
-            self.paint_bbox(begin, destination)
+            color = QColor(0, 0, 0)
+            self.paint_bbox(begin, destination, color)
+
+            
+        self.obj_list.setFocus()
         
         self.update()
         
@@ -82,7 +87,8 @@ class Ui_Dialog(BboxDrawer):
         x2, y2 = self.destination.toTuple()
         
         temp = {'iscrowd': 0,'image_id' :0,
-                'bbox':[min(x1, x2), min(y1, y2), abs(x2-x1), abs(y2-y1)], 'category_id': 0, 'id': 0}
+                'bbox':[min(x1, x2), min(y1, y2), abs(x2-x1), abs(y2-y1)], 
+                'category_id': 0, 'id': 0}
         
         self.image_ann.append(temp)
         # print(self.image_ann)
@@ -91,10 +97,36 @@ class Ui_Dialog(BboxDrawer):
     def load_ann(self):
         self.image_ann
         
+        
     def ann_init(self):
         self.image_ann = []
         self.obj_list.clear()
         self.obj_idx = 0
+        
+    def select_ann(self):
+        idx = self.obj_list.currentRow()
+        
+        x, y, w, h = self.image_ann[idx]['bbox']
+  
+        copy_image_ann = self.image_ann.copy()
+        
+        self.image = QPixmap(self.path).scaled(QSize(self.imsp_w + 20, self.imsp_h - 20), aspectMode=Qt.KeepAspectRatio)
+        
+        for i, ann in enumerate(copy_image_ann):
+            x, y, w, h= ann['bbox']
+            begin = QPoint(x,y)
+            destination = QPoint(x+w, y+h)
+            
+            if i == idx:
+                color = QColor(255, 0, 0)
+            else:
+                color = QColor(0, 0, 0)
+                
+            self.paint_bbox(begin, destination, color)
+            
+        
+        self.update()
+        
         
         
 
@@ -152,9 +184,8 @@ class Ui_Dialog(BboxDrawer):
         annlist_viewer.addLayout(pn2_select)
         #########################################
         
-        
-        
         self.ann_info = QListView()
+        
         #########################################
         
         ann_tool = QVBoxLayout()
@@ -191,6 +222,8 @@ class Ui_Dialog(BboxDrawer):
         
         self.saveButton.clicked.connect(self.save_obj)
         self.delButton.clicked.connect(self.remove_bbox)
+        
+        self.obj_list.clicked.connect(self.select_ann)
         
         
     def next_im(self):

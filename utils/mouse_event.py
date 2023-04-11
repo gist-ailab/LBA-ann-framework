@@ -24,7 +24,8 @@ class BboxDrawer(QWidget):
 		if not self.begin.isNull() and not self.destination.isNull():
 		
 			rect = QRect(self.begin, self.destination)
-			painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
+			color = QColor(255, 0, 0)
+			painter.setPen(QPen(color, 2, Qt.SolidLine))
 			brush = QBrush(Qt.BDiagPattern)
 			painter.setBrush(brush)
 			painter.drawRect(rect.normalized())
@@ -34,21 +35,27 @@ class BboxDrawer(QWidget):
 
 
 	def mousePressEvent(self, event):
-		if event.buttons() & Qt.LeftButton:
+		if Qt.LeftButton:
 			self.begin = event.pos()
 			self.destination = self.begin
 			self.update()
+   
+		# elif event.buttons():
+			
+		# 	self.update()
+			
             
 	def mouseMoveEvent(self, event):
-		if event.buttons() & Qt.LeftButton:		
+		if  Qt.LeftButton:		
 
 			self.destination = event.pos()
 			self.update()
 
 
 	def mouseReleaseEvent(self, event):
-		if event.button() & Qt.LeftButton:
-			self.paint_bbox(self.begin, self.destination)
+		if  Qt.LeftButton:
+			color = QColor(0, 0, 0)
+			self.paint_bbox(self.begin, self.destination, color)
 			# self.viewer.setPixmap(self.image)
    
 			self.record_bbox_ann() # record ann bbox information
@@ -57,15 +64,15 @@ class BboxDrawer(QWidget):
 			self.update()
 
 
-	def paint_bbox(self, begin, destination):
+	def paint_bbox(self, begin, destination, color):
 		painter = QPainter()
 		painter.begin(self.image)
-		print(begin - QPoint(self.xh, self.yh), destination - QPoint(self.xh, self.yh))
+		# print(begin - QPoint(self.xh, self.yh), destination - QPoint(self.xh, self.yh))
   
 		rect = QRect(begin - QPoint(self.xh, self.yh), 
 					 destination - QPoint(self.xh, self.yh))
 		
-		painter.setPen(QPen((QColor(255, 0, 0)), 2, Qt.SolidLine))
+		painter.setPen(QPen(color, 2, Qt.SolidLine))
 		painter.drawRect(rect.normalized())
   
 		painter.device()
@@ -99,7 +106,7 @@ class BboxDrawer(QWidget):
   		# self.viewer.setPixmap(self.image)
 		self.update()
 		self.ann_init()
-		print(self.fileModel.index())
+		# print(self.fileModel.index())
 		# self.scroll(self.path)
   
 	# def scroll(self, name):
