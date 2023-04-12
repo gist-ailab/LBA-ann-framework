@@ -71,6 +71,9 @@ class Ui_Dialog(BboxDrawer, Annotator):
         
         dset_loader.addLayout(pn_select)
         #########################################
+        
+        
+        #########################################
         # ann obj list layout
         annlist_viewer = QVBoxLayout()
         self.obj_list = QListWidget()
@@ -92,7 +95,7 @@ class Ui_Dialog(BboxDrawer, Annotator):
         self.ann_info = QListView()
         
         #########################################
-        
+    
         ann_tool = QVBoxLayout()
         ann_tool.addLayout(dset_loader)
         ann_tool.addLayout(annlist_viewer)

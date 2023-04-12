@@ -17,7 +17,6 @@ class BboxDrawer(QWidget):
 		
 
 	def paintEvent(self, event):
-		
 		painter = QPainter(self)
 		painter.drawPixmap(QPoint(self.xh, self.yh), self.image)
 		
