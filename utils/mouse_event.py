@@ -10,6 +10,34 @@ CURSOR_MOVE = Qt.ClosedHandCursor
 CURSOR_GRAB = Qt.OpenHandCursor
 
 
+class AnnDrawer(QLabel):
+	def __init__(self):
+		super().__init__()
+
+
+	def paintEvent(self, event):
+		super().paintEvent(event)
+		qp = QPainter(self)
+		br = QBrush(QColor(100, 10, 10, 40))
+		qp.setBrush(br)
+		qp.drawRect(QRect(self.begin, self.end))
+
+
+	def paint_bbox(self, begin, destination, color):
+
+		painter = QPainter()
+		painter.begin(self.image)
+
+		rect = QRect(begin - QPoint(self.xh, self.yh), destination - QPoint(self.xh, self.yh))
+		print(rect)
+		painter.setPen(QPen(color, 2, Qt.SolidLine))
+		painter.drawRect(rect.normalized())
+
+		painter.device()
+		painter.end()
+		del painter
+
+
 class BboxDrawer(QWidget):
 	def __init__(self):
 		super().__init__()
@@ -58,11 +86,10 @@ class BboxDrawer(QWidget):
 	def paint_bbox(self, begin, destination, color):
 		painter = QPainter()
 		painter.begin(self.image)
+  
 
-
-		rect = QRect(begin - QPoint(self.xh, self.yh), 
-					 destination - QPoint(self.xh, self.yh))
-		
+		rect = QRect(begin - QPoint(self.xh, self.yh), destination - QPoint(self.xh, self.yh))
+		print(rect)
 		painter.setPen(QPen(color, 2, Qt.SolidLine))
 		painter.drawRect(rect.normalized())
   
@@ -82,13 +109,10 @@ class BboxDrawer(QWidget):
 		img_w, img_h = self.image.width(), self.image.height()
 		self.xh, self.yh = abs(self.imsp_w - img_w)//2 , abs(self.imsp_h - img_h)//2
   
-		# self.viewer.setPixmap(self.image)
 		self.current_im=self.path
 		self.update()
 		
-		# self.scroll(self.path)
   
-		
 	def on_clicked_1(self):
      
 		self.ann_init()
@@ -99,15 +123,7 @@ class BboxDrawer(QWidget):
 		img_w, img_h = self.image.width(), self.image.height()
 		self.xh, self.yh = abs(self.imsp_w - img_w)//2 , abs(self.imsp_h - img_h)//2
   
-  		# self.viewer.setPixmap(self.image)
 		self.update()
-		
-		# print(self.fileModel.index())
-		# self.scroll(self.path)
-  
-	# def scroll(self, name):
-	# 	item = self.file_list.findItems(name, Qt.MatchRegExp)[0]
-	# 	item.setSelected(True)
-	# 	self.file_list.scrollToItem(item, QAbstractItemView.PositionAtTop)
+
 
 

@@ -34,6 +34,22 @@ class Ui_Dialog(BboxDrawer, Annotator):
         img_w, img_h = self.image.width(), self.image.height()
         self.xh, self.yh = abs(self.imsp_w - img_w)//2 , abs(self.imsp_h - img_h)//2
         
+        self.categories_list=['person', 'bicycle', 'car', 'motorcycle', 'airplane', 
+                         'bus', 'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 
+                         'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 
+                         'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 
+                         'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 
+                         'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 
+                         'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 
+                         'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 
+                         'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 
+                         'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 
+                         'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 
+                         'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 
+                         'scissors', 'teddy bear', 'hair drier', 'toothbrush']
+        
+        
+        
 
     def initUI(self, ui_w=1200, ui_h=800):
         self.setMinimumSize(ui_w, ui_h)
@@ -92,7 +108,9 @@ class Ui_Dialog(BboxDrawer, Annotator):
         annlist_viewer.addLayout(pn2_select)
         #########################################
         
-        self.ann_info = QListView()
+        ann_info = QVBoxLayout()
+        self.class_list = QListWidget()
+        ann_info.addWidget(self.class_list)
         
         #########################################
     
@@ -100,7 +118,7 @@ class Ui_Dialog(BboxDrawer, Annotator):
         ann_tool.addLayout(dset_loader)
         ann_tool.addLayout(annlist_viewer)
         
-        ann_tool.addWidget(self.ann_info)
+        ann_tool.addLayout(ann_info)
         #########################################
         #########################################
         
@@ -121,6 +139,9 @@ class Ui_Dialog(BboxDrawer, Annotator):
         self.file_list.setRootIndex(self.fileModel.index(self.filename))
         
         self.file_list.clicked.connect(self.on_clicked)
+        
+        for idx, cls in enumerate(self.categories_list):
+            self.class_list.insertItem(idx, cls)
     
         
     def retranslateUi(self):

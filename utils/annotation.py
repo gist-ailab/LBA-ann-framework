@@ -29,9 +29,18 @@ class Annotator():
         self.xh, self.yh = abs(self.imsp_w - img_w)//2 , abs(self.imsp_h - img_h)//2
         
         
+        
+        # self.color_list = []
+        
+        
+        
     def add_obj(self):
         self.obj_idx += 1
-        self.obj_list.insertItem(self.obj_idx, "object_class_" + str(self.obj_idx))
+        idx = self.class_list.currentRow()
+        print(idx)
+        class_name = self.categories_list[idx]
+        
+        self.obj_list.insertItem(self.obj_idx, class_name)
         
     
     def save_obj(self):
