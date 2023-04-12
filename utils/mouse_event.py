@@ -29,25 +29,18 @@ class BboxDrawer(QWidget):
 			painter.setBrush(brush)
 			painter.drawRect(rect.normalized())
 
-			painter.end()
-			del painter
-
 
 	def mousePressEvent(self, event):
 		if Qt.LeftButton:
-			self.begin = event.pos()
+			self.begin = event.position().toPoint()
 			self.destination = self.begin
 			self.update()
-   
-		# elif event.buttons():
-			
-		# 	self.update()
 			
             
 	def mouseMoveEvent(self, event):
-		if  Qt.LeftButton:		
-
-			self.destination = event.pos()
+		if  Qt.LeftButton:
+			
+			self.destination = event.position().toPoint()
 			self.update()
 
 
@@ -55,7 +48,6 @@ class BboxDrawer(QWidget):
 		if  Qt.LeftButton:
 			color = QColor(0, 0, 0)
 			self.paint_bbox(self.begin, self.destination, color)
-			# self.viewer.setPixmap(self.image)
    
 			self.record_bbox_ann() # record ann bbox information
 			self.add_obj()
@@ -66,8 +58,8 @@ class BboxDrawer(QWidget):
 	def paint_bbox(self, begin, destination, color):
 		painter = QPainter()
 		painter.begin(self.image)
-		# print(begin - QPoint(self.xh, self.yh), destination - QPoint(self.xh, self.yh))
-  
+
+
 		rect = QRect(begin - QPoint(self.xh, self.yh), 
 					 destination - QPoint(self.xh, self.yh))
 		
