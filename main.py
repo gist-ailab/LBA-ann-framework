@@ -6,7 +6,7 @@ from utils import main_ui
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    ex = main_ui.Ui_Dialog()
+    ex = main_ui.MainWindow()
     try:
         sys.exit(app.exec())
     except SystemExit:
