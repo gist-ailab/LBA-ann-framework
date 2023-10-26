@@ -4,17 +4,12 @@ import torch.nn.functional as F
 
 import os
 import cv2
-import natsort
+
 from PIL import Image
 
-
-from models.clip import clip
 from models.segment_anything import sam_model_registry, SamAutomaticMaskGenerator
 
-
 from models.dinov2_model import Dinov2
-
-import PIL
 
 from torchvision import transforms
 
