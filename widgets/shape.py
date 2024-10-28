@@ -1,56 +1,70 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+import copy
+
+import numpy as np
+import skimage.measure
+from PySide6 import QtCore
+from PySide6 import QtGui
 
 
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
-from PySide6.QtCore import *
 
-import sys
-
-DEFAULT_LINE_COLOR = QColor(0, 255, 0, 128)
-DEFAULT_FILL_COLOR = QColor(255, 0, 0, 128)
-DEFAULT_SELECT_LINE_COLOR = QColor(255, 255, 255)
-DEFAULT_SELECT_FILL_COLOR = QColor(0, 128, 255, 155)
-DEFAULT_VERTEX_FILL_COLOR = QColor(0, 255, 0, 255)
-DEFAULT_HVERTEX_FILL_COLOR = QColor(255, 0, 0)
-
-
-from math import sqrt
-
-def distance(p):
-    return sqrt(p.x() * p.x() + p.y() * p.y())
+# TODO(unknown):
+# - [opt] Store paths instead of creating new ones at each paint.
 
 
 class Shape(object):
-    P_SQUARE, P_ROUND = range(2)
+    # Render handles as squares
+    P_SQUARE = 0
 
-    MOVE_VERTEX, NEAR_VERTEX = range(2)
+    # Render handles as circles
+    P_ROUND = 1
 
-    # The following class variables influence the drawing
-    # of _all_ shape objects.
-    line_color = DEFAULT_LINE_COLOR
-    fill_color = DEFAULT_FILL_COLOR
-    select_line_color = DEFAULT_SELECT_LINE_COLOR
-    select_fill_color = DEFAULT_SELECT_FILL_COLOR
-    vertex_fill_color = DEFAULT_VERTEX_FILL_COLOR
-    h_vertex_fill_color = DEFAULT_HVERTEX_FILL_COLOR
+    # Flag for the handles we would move if dragging
+    MOVE_VERTEX = 0
+
+    # Flag for all other handles on the current shape
+    NEAR_VERTEX = 1
+
+    PEN_WIDTH = 2
+
+    # The following class variables influence the drawing of all shape objects.
+    line_color = None
+    fill_color = None
+    select_line_color = None
+    select_fill_color = None
+    vertex_fill_color = None
+    hvertex_fill_color = None
     point_type = P_ROUND
-    point_size = 16
+    point_size = 8
     scale = 1.0
-    label_font_size = 8
 
-    def __init__(self, label=None, line_color=None, difficult=False, paint_label=False):
+    def __init__(
+        self,
+        label=None,
+        line_color=None,
+        shape_type=None,
+        flags=None,
+        group_id=None,
+        description=None,
+        mask=None,
+    ):
         self.label = label
+        self.group_id = group_id
         self.points = []
+        self.point_labels = []
+        self.shape_type = shape_type
+        self._shape_raw = None
+        self._points_raw = []
+        self._shape_type_raw = None
         self.fill = False
         self.selected = False
-        self.difficult = difficult
-        self.paint_label = paint_label
+        self.flags = flags
+        self.description = description
+        self.other_data = {}
+        self.mask = mask
 
-        self._highlight_index = None
-        self._highlight_mode = self.NEAR_VERTEX
-        self._highlight_settings = {
+        self._highlightIndex = None
+        self._highlightMode = self.NEAR_VERTEX
+        self._highlightSettings = {
             self.NEAR_VERTEX: (4, self.P_ROUND),
             self.MOVE_VERTEX: (1.5, self.P_SQUARE),
         }
@@ -63,90 +77,216 @@ class Shape(object):
             # is used for drawing the pending line a different color.
             self.line_color = line_color
 
+    def _scale_point(self, point: QtCore.QPointF) -> QtCore.QPointF:
+        return QtCore.QPointF(point.x() * self.scale, point.y() * self.scale)
+
+    def setShapeRefined(self, shape_type, points, point_labels, mask=None):
+        self._shape_raw = (self.shape_type, self.points, self.point_labels)
+        self.shape_type = shape_type
+        self.points = points
+        self.point_labels = point_labels
+        self.mask = mask
+
+    def restoreShapeRaw(self):
+        if self._shape_raw is None:
+            return
+        self.shape_type, self.points, self.point_labels = self._shape_raw
+        self._shape_raw = None
+
+    @property
+    def shape_type(self):
+        return self._shape_type
+
+    @shape_type.setter
+    def shape_type(self, value):
+        if value is None:
+            value = "polygon"
+        if value not in [
+            "polygon",
+            "rectangle",
+            "point",
+            "line",
+            "circle",
+            "linestrip",
+            "points",
+            "mask",
+        ]:
+            raise ValueError("Unexpected shape_type: {}".format(value))
+        self._shape_type = value
+
     def close(self):
         self._closed = True
 
-    def reach_max_points(self):
-        if len(self.points) >= 4:
-            return True
-        return False
-
-    def add_point(self, point):
-        if not self.reach_max_points():
+    def addPoint(self, point, label=1):
+        if self.points and point == self.points[0]:
+            self.close()
+        else:
             self.points.append(point)
+            self.point_labels.append(label)
 
-    def pop_point(self):
+    def canAddPoint(self):
+        return self.shape_type in ["polygon", "linestrip"]
+
+    def popPoint(self):
         if self.points:
+            if self.point_labels:
+                self.point_labels.pop()
             return self.points.pop()
         return None
 
-    def is_closed(self):
+    def insertPoint(self, i, point, label=1):
+        self.points.insert(i, point)
+        self.point_labels.insert(i, label)
+
+    def removePoint(self, i):
+        if not self.canAddPoint():
+            logger.warning(
+                "Cannot remove point from: shape_type=%r",
+                self.shape_type,
+            )
+            return
+
+        if self.shape_type == "polygon" and len(self.points) <= 3:
+            logger.warning(
+                "Cannot remove point from: shape_type=%r, len(points)=%d",
+                self.shape_type,
+                len(self.points),
+            )
+            return
+
+        if self.shape_type == "linestrip" and len(self.points) <= 2:
+            logger.warning(
+                "Cannot remove point from: shape_type=%r, len(points)=%d",
+                self.shape_type,
+                len(self.points),
+            )
+            return
+
+        self.points.pop(i)
+        self.point_labels.pop(i)
+
+    def isClosed(self):
         return self._closed
 
-    def set_open(self):
+    def setOpen(self):
         self._closed = False
 
     def paint(self, painter):
+        if self.mask is None and not self.points:
+            return
+
+        color = self.select_line_color if self.selected else self.line_color
+        pen = QtGui.QPen(color)
+        # Try using integer sizes for smoother drawing(?)
+        pen.setWidth(self.PEN_WIDTH)
+        painter.setPen(pen)
+
+        if self.mask is not None:
+            image_to_draw = np.zeros(self.mask.shape + (4,), dtype=np.uint8)
+            fill_color = (
+                self.select_fill_color.getRgb()
+                if self.selected
+                else self.fill_color.getRgb()
+            )
+            image_to_draw[self.mask] = fill_color
+            qimage = QtGui.QImage.fromData(labelme.utils.img_arr_to_data(image_to_draw))
+            qimage = qimage.scaled(
+                qimage.size() * self.scale,
+                QtCore.Qt.IgnoreAspectRatio,
+                QtCore.Qt.SmoothTransformation,
+            )
+
+            painter.drawImage(self._scale_point(point=self.points[0]), qimage)
+
+            line_path = QtGui.QPainterPath()
+            contours = skimage.measure.find_contours(np.pad(self.mask, pad_width=1))
+            for contour in contours:
+                contour += [self.points[0].y(), self.points[0].x()]
+                line_path.moveTo(
+                    self._scale_point(QtCore.QPointF(contour[0, 1], contour[0, 0]))
+                )
+                for point in contour[1:]:
+                    line_path.lineTo(
+                        self._scale_point(QtCore.QPointF(point[1], point[0]))
+                    )
+            painter.drawPath(line_path)
+
         if self.points:
-            color = self.select_line_color if self.selected else self.line_color
-            pen = QPen(color)
-            # Try using integer sizes for smoother drawing(?)
-            pen.setWidth(max(1, int(round(2.0 / self.scale))))
-            painter.setPen(pen)
+            line_path = QtGui.QPainterPath()
+            vrtx_path = QtGui.QPainterPath()
+            negative_vrtx_path = QtGui.QPainterPath()
 
-            line_path = QPainterPath()
-            vertex_path = QPainterPath()
+            if self.shape_type in ["rectangle", "mask"]:
+                assert len(self.points) in [1, 2]
+                if len(self.points) == 2:
+                    rectangle = QtCore.QRectF(
+                        self._scale_point(self.points[0]),
+                        self._scale_point(self.points[1]),
+                    )
+                    line_path.addRect(rectangle)
+                if self.shape_type == "rectangle":
+                    for i in range(len(self.points)):
+                        self.drawVertex(vrtx_path, i)
+            elif self.shape_type == "circle":
+                assert len(self.points) in [1, 2]
+                if len(self.points) == 2:
+                    raidus = labelme.utils.distance(
+                        self._scale_point(self.points[0] - self.points[1])
+                    )
+                    line_path.addEllipse(
+                        self._scale_point(self.points[0]), raidus, raidus
+                    )
+                for i in range(len(self.points)):
+                    self.drawVertex(vrtx_path, i)
+            elif self.shape_type == "linestrip":
+                line_path.moveTo(self._scale_point(self.points[0]))
+                for i, p in enumerate(self.points):
+                    line_path.lineTo(self._scale_point(p))
+                    self.drawVertex(vrtx_path, i)
+            elif self.shape_type == "points":
+                assert len(self.points) == len(self.point_labels)
+                for i, point_label in enumerate(self.point_labels):
+                    if point_label == 1:
+                        self.drawVertex(vrtx_path, i)
+                    else:
+                        self.drawVertex(negative_vrtx_path, i)
+            else:
+                line_path.moveTo(self._scale_point(self.points[0]))
+                # Uncommenting the following line will draw 2 paths
+                # for the 1st vertex, and make it non-filled, which
+                # may be desirable.
+                # self.drawVertex(vrtx_path, 0)
 
-            line_path.moveTo(self.points[0])
-            # Uncommenting the following line will draw 2 paths
-            # for the 1st vertex, and make it non-filled, which
-            # may be desirable.
-            # self.drawVertex(vertex_path, 0)
-
-            for i, p in enumerate(self.points):
-                line_path.lineTo(p)
-                self.draw_vertex(vertex_path, i)
-            if self.is_closed():
-                line_path.lineTo(self.points[0])
+                for i, p in enumerate(self.points):
+                    line_path.lineTo(self._scale_point(p))
+                    self.drawVertex(vrtx_path, i)
+                if self.isClosed():
+                    line_path.lineTo(self._scale_point(self.points[0]))
 
             painter.drawPath(line_path)
-            painter.drawPath(vertex_path)
-            painter.fillPath(vertex_path, self.vertex_fill_color)
-
-            # Draw text at the top-left
-            if self.paint_label:
-                min_x = sys.maxsize
-                min_y = sys.maxsize
-                min_y_label = int(1.25 * self.label_font_size)
-                for point in self.points:
-                    min_x = min(min_x, point.x())
-                    min_y = min(min_y, point.y())
-                if min_x != sys.maxsize and min_y != sys.maxsize:
-                    font = QFont()
-                    font.setPointSize(self.label_font_size)
-                    font.setBold(True)
-                    painter.setFont(font)
-                    if self.label is None:
-                        self.label = ""
-                    if min_y < min_y_label:
-                        min_y += min_y_label
-                    painter.drawText(int(min_x), int(min_y), self.label)
-
-            if self.fill:
+            if vrtx_path.length() > 0:
+                painter.drawPath(vrtx_path)
+                painter.fillPath(vrtx_path, self._vertex_fill_color)
+            if self.fill and self.mask is None:
                 color = self.select_fill_color if self.selected else self.fill_color
                 painter.fillPath(line_path, color)
 
-    def draw_vertex(self, path, i):
-        d = self.point_size / self.scale
+            pen.setColor(QtGui.QColor(255, 0, 0, 255))
+            painter.setPen(pen)
+            painter.drawPath(negative_vrtx_path)
+            painter.fillPath(negative_vrtx_path, QtGui.QColor(255, 0, 0, 255))
+
+    def drawVertex(self, path, i):
+        d = self.point_size
         shape = self.point_type
-        point = self.points[i]
-        if i == self._highlight_index:
-            size, shape = self._highlight_settings[self._highlight_mode]
+        point = self._scale_point(self.points[i])
+        if i == self._highlightIndex:
+            size, shape = self._highlightSettings[self._highlightMode]
             d *= size
-        if self._highlight_index is not None:
-            self.vertex_fill_color = self.h_vertex_fill_color
+        if self._highlightIndex is not None:
+            self._vertex_fill_color = self.hvertex_fill_color
         else:
-            self.vertex_fill_color = Shape.vertex_fill_color
+            self._vertex_fill_color = self.vertex_fill_color
         if shape == self.P_SQUARE:
             path.addRect(point.x() - d / 2, point.y() - d / 2, d, d)
         elif shape == self.P_ROUND:
@@ -154,52 +294,91 @@ class Shape(object):
         else:
             assert False, "unsupported vertex shape"
 
-    def nearest_vertex(self, point, epsilon):
-        index = None
+    def nearestVertex(self, point, epsilon):
+        min_distance = float("inf")
+        min_i = None
+        point = QtCore.QPointF(point.x() * self.scale, point.y() * self.scale)
         for i, p in enumerate(self.points):
-            dist = distance(p - point)
-            if dist <= epsilon:
-                index = i
-                epsilon = dist
-        return index
+            p = QtCore.QPointF(p.x() * self.scale, p.y() * self.scale)
+            dist = labelme.utils.distance(p - point)
+            if dist <= epsilon and dist < min_distance:
+                min_distance = dist
+                min_i = i
+        return min_i
 
-    def contains_point(self, point):
-        return self.make_path().contains(point)
+    def nearestEdge(self, point, epsilon):
+        min_distance = float("inf")
+        post_i = None
+        point = QtCore.QPointF(point.x() * self.scale, point.y() * self.scale)
+        for i in range(len(self.points)):
+            start = self.points[i - 1]
+            end = self.points[i]
+            start = QtCore.QPointF(start.x() * self.scale, start.y() * self.scale)
+            end = QtCore.QPointF(end.x() * self.scale, end.y() * self.scale)
+            line = [start, end]
+            dist = labelme.utils.distancetoline(point, line)
+            if dist <= epsilon and dist < min_distance:
+                min_distance = dist
+                post_i = i
+        return post_i
 
-    def make_path(self):
-        path = QPainterPath(self.points[0])
-        for p in self.points[1:]:
-            path.lineTo(p)
+    def containsPoint(self, point):
+        if self.mask is not None:
+            y = np.clip(
+                int(round(point.y() - self.points[0].y())),
+                0,
+                self.mask.shape[0] - 1,
+            )
+            x = np.clip(
+                int(round(point.x() - self.points[0].x())),
+                0,
+                self.mask.shape[1] - 1,
+            )
+            return self.mask[y, x]
+        return self.makePath().contains(point)
+
+    def makePath(self):
+        if self.shape_type in ["rectangle", "mask"]:
+            path = QtGui.QPainterPath()
+            if len(self.points) == 2:
+                path.addRect(QtCore.QRectF(self.points[0], self.points[1]))
+        elif self.shape_type == "circle":
+            path = QtGui.QPainterPath()
+            if len(self.points) == 2:
+                raidus = labelme.utils.distance(self.points[0] - self.points[1])
+                path.addEllipse(self.points[0], raidus, raidus)
+        else:
+            path = QtGui.QPainterPath(self.points[0])
+            for p in self.points[1:]:
+                path.lineTo(p)
         return path
 
-    def bounding_rect(self):
-        return self.make_path().boundingRect()
+    def boundingRect(self):
+        return self.makePath().boundingRect()
 
-    def move_by(self, offset):
+    def moveBy(self, offset):
         self.points = [p + offset for p in self.points]
 
-    def move_vertex_by(self, i, offset):
+    def moveVertexBy(self, i, offset):
         self.points[i] = self.points[i] + offset
 
-    def highlight_vertex(self, i, action):
-        self._highlight_index = i
-        self._highlight_mode = action
+    def highlightVertex(self, i, action):
+        """Highlight a vertex appropriately based on the current action
 
-    def highlight_clear(self):
-        self._highlight_index = None
+        Args:
+            i (int): The vertex index
+            action (int): The action
+            (see Shape.NEAR_VERTEX and Shape.MOVE_VERTEX)
+        """
+        self._highlightIndex = i
+        self._highlightMode = action
+
+    def highlightClear(self):
+        """Clear the highlighted point"""
+        self._highlightIndex = None
 
     def copy(self):
-        shape = Shape("%s" % self.label)
-        shape.points = [p for p in self.points]
-        shape.fill = self.fill
-        shape.selected = self.selected
-        shape._closed = self._closed
-        if self.line_color != Shape.line_color:
-            shape.line_color = self.line_color
-        if self.fill_color != Shape.fill_color:
-            shape.fill_color = self.fill_color
-        shape.difficult = self.difficult
-        return shape
+        return copy.deepcopy(self)
 
     def __len__(self):
         return len(self.points)
