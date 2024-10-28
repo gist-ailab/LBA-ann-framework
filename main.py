@@ -2,7 +2,7 @@ import sys
 from PySide6 import QtWidgets
 
 
-from utils import main_ui
+from windows import main_ui
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

@@ -5,7 +5,7 @@ from PySide6.QtGui import *
 from PySide6.QtCore import *
 
 
-from utils.canvas import Canvas
+from widgets.canvas import Canvas
 
 class MainWindow(QMainWindow):
 

@@ -2,7 +2,7 @@ from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 from PySide6.QtCore import *
 
-from utils.shape import Shape
+from widgets.shape import Shape
 # from libs.utils import distance
 
 CURSOR_DEFAULT = Qt.ArrowCursor
