@@ -209,7 +209,10 @@ class MainWindow(QMainWindow):
     def on_clicked(self, index):
   
         self.path = self.fileModel.fileInfo(index).absoluteFilePath()
-        self.canvas.load_pixmap(QPixmap(self.path))
+        pixmap = QPixmap(self.path)
+        scaled_pixmap = pixmap.scaled(self.canvas.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        
+        self.canvas.loadPixmap(scaled_pixmap)
         self.current_im=self.path
         self.obj_list.clear()
         self.update()
@@ -217,7 +220,10 @@ class MainWindow(QMainWindow):
     def on_clicked_1(self):
         
         self.path = self.current_im
-        self.canvas.load_pixmap(QPixmap(self.path))
+        pixmap = QPixmap(self.path)
+        scaled_pixmap = pixmap.scaled(self.canvas.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        
+        self.canvas.loadPixmap(scaled_pixmap)
         self.obj_list.clear()
         self.update()
         
