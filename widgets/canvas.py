@@ -3,15 +3,11 @@ from PySide6 import QtCore
 from PySide6 import QtGui
 from PySide6 import QtWidgets
 
-# import labelme.ai
-# import labelme.utils
-# from labelme import QT5
+
 QT5 = True
 from widgets.shape import Shape
 from math import sqrt
 import numpy as np
-# TODO(unknown):
-# - [maybe] Find optimal epsilon value.
 
 
 CURSOR_DEFAULT = QtCore.Qt.ArrowCursor
@@ -80,8 +76,6 @@ class Canvas(QtWidgets.QWidget):
                 "line": False,
                 "point": False,
                 "linestrip": False,
-                # "ai_polygon": False,
-                # "ai_mask": False,
                 
                 "prompt-box": True,
                 "prompt-points": False,
@@ -152,8 +146,6 @@ class Canvas(QtWidgets.QWidget):
             "line",
             "point",
             "linestrip",
-            # "ai_polygon",
-            # "ai_mask",
             
             "prompt-box",
             "prompt-points",
@@ -260,8 +252,6 @@ class Canvas(QtWidgets.QWidget):
 
         self.prevMovePoint = pos
         self.restoreCursor()
-        
-        is_shift_pressed = ev.modifiers() & QtCore.Qt.ShiftModifier
 
         # Polygon drawing.
         if self.drawing():
@@ -305,12 +295,6 @@ class Canvas(QtWidgets.QWidget):
                 self.line.points = [self.current[-1], pos]
                 self.line.point_labels = [1, 1]
                 
-            # elif self.createMode in ["ai_polygon", "ai_mask"]:
-            #     self.line.points = [self.current.points[-1], pos]
-            #     self.line.point_labels = [
-            #         self.current.point_labels[-1],
-            #         0 if is_shift_pressed else 1,
-            #     ]
                 
             elif self.createMode == "prompt-box":
                 self.line.points = [self.current[0], pos]
@@ -560,15 +544,6 @@ class Canvas(QtWidgets.QWidget):
                     self.prevPoint = pos
                     self.repaint()
                     
-        
-        # elif ev.button() == QtCore.Qt.MouseButton.RightButton and self.editing():
-        #     group_mode = ev.modifiers() == QtCore.Qt.ControlModifier
-        #     if not self.selectedShapes or (
-        #         self.hShape is not None and self.hShape not in self.selectedShapes
-        #     ):
-        #         self.selectShapePoint(pos, multiple_selection_mode=group_mode)
-        #         self.repaint()
-        #     self.prevPoint = pos
 
 
     def mouseReleaseEvent(self, ev):
