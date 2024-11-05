@@ -72,7 +72,6 @@ class Canvas(QtWidgets.QWidget):
             {
                 "polygon": False,
                 "rectangle": True,
-                "circle": False,
                 "line": False,
                 "point": False,
                 "linestrip": False,
@@ -142,7 +141,6 @@ class Canvas(QtWidgets.QWidget):
         if value not in [
             "polygon",
             "rectangle",
-            "circle",
             "line",
             "point",
             "linestrip",
@@ -312,10 +310,6 @@ class Canvas(QtWidgets.QWidget):
                 self.line.point_labels = [1, 1]
                 self.line.close()
                 
-            elif self.createMode == "circle":
-                self.line.points = [self.current[0], pos]
-                self.line.point_labels = [1, 1]
-                self.line.shape_type = "circle"
                 
             elif self.createMode == "line":
                 self.line.points = [self.current[0], pos]
