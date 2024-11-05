@@ -1,10 +1,7 @@
-import io
 import copy
-import PIL.Image
 import numpy as np
 import skimage.measure
 
-from math import sqrt
 from PySide6 import QtCore
 from PySide6 import QtGui
 
