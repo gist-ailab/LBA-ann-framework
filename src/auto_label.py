@@ -1,10 +1,6 @@
 from src.segment_anything2.sam2.build_sam import build_sam2
 from src.segment_anything2.sam2.sam2_image_predictor import SAM2ImagePredictor
 
-# from src.marineinst_sam import sam_model_registry, SamPredictor
-
-# from src.segment_anything import sam_model_registry, SamPredictor
-
 
 import torch
 
@@ -39,23 +35,6 @@ class Sam2Labler():
         else:
             device = torch.device("cpu")
         print(f"using device: {device}")
-
-        # if device.type == "cuda":
-        #     # use bfloat16 for the entire notebook
-        #     torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
-        #     # turn on tfloat32 for Ampere GPUs (https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices)
-        #     if torch.cuda.get_device_properties(0).major >= 8:
-        #         torch.backends.cuda.matmul.allow_tf32 = True
-        #         torch.backends.cudnn.allow_tf32 = True
-                
-        # elif device.type == "mps":
-        #     print(
-        #         "\nSupport for MPS devices is preliminary. SAM 2 is trained with CUDA and might "
-        #         "give numerically different outputs and sometimes degraded performance on MPS. "
-        #         "See e.g. https://github.com/pytorch/pytorch/issues/84936 for a discussion."
-        #         )
-        
-        
         
         sam2_checkpoint = "src/segment_anything2/checkpoints/sam2_hiera_tiny.pt"
         model_cfg = "../sam2_configs/sam2_hiera_t.yaml"
@@ -64,15 +43,6 @@ class Sam2Labler():
         sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=device)
         self.predictor = SAM2ImagePredictor(sam2_model)
         
-        
-        # # sam_checkpoint = "src/marineinst_sam/marineinst_vit-h_stage1.pth"
-        # sam_checkpoint = "src/segment_anything/sam_vit_h_4b8939.pth"
-        # model_type = "vit_h"
-    
-        # sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-        # sam.to(device=device)
-        
-        # self.predictor = SamPredictor(sam)
         
     
     def set_image(self, image):
