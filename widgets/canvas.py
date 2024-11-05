@@ -6,6 +6,7 @@ from PySide6 import QtWidgets
 
 QT5 = True
 from widgets.shape import Shape
+from widgets.utils import distance, find_box_coordinates, img_qt_to_arr
 from math import sqrt
 import numpy as np
 
@@ -18,29 +19,6 @@ CURSOR_GRAB = QtCore.Qt.OpenHandCursor
 
 MOVE_SPEED = 5.0
 
-def distance(p):
-    return sqrt(p.x() * p.x() + p.y() * p.y())
-
-def find_box_coordinates(box):
-    # Extract x and y coordinates from the input array
-    x_values = [point[0] for point in box]
-    y_values = [point[1] for point in box]
-    
-    # Find xmin, ymin, xmax, ymax
-    xmin = min(x_values)
-    ymin = min(y_values)
-    xmax = max(x_values)
-    ymax = max(y_values)
-    
-    return [xmin, ymin, xmax, ymax]
-
-def img_qt_to_arr(img_qt):
-    w, h, d = img_qt.size().width(), img_qt.size().height(), img_qt.depth()
-    bytes_ = img_qt.bits().tobytes()  # Use tobytes() instead of asstring()
-    img_arr = np.frombuffer(bytes_, dtype=np.uint8).reshape((h, w, d // 8))
-    img_arr = img_arr[:,:, :3]
-
-    return img_arr
 
 class Canvas(QtWidgets.QWidget):
     zoomRequest = QtCore.Signal(int, QtCore.QPoint)
